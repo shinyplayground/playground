@@ -86,7 +86,7 @@ coeffPower <- function(a,b,r,w_initial) {
 
 coeffExp <- function(rho,w_initial,w_gain,w_loss){
 	w_max <- 20
-	w <- seq(0,w_max,0.2)
+	w <- seq(1,w_max,length.out=200)
 	
 	w_low <- w_initial-w_loss
 	w_high <- w_initial+w_gain
@@ -126,7 +126,7 @@ coeffQuad <- function(a,b,w_initial){
 
 coeffLog <- function(w_initial){
 	w_max <- 100
-	w <- c(1:w_max)
+	w <- seq(1,w_max,length.out=200)
 	u_prime <- 1/w
 	u_dprime <- -1/(w^2)
 	r_a <- 1/w
@@ -143,7 +143,7 @@ coeffLog <- function(w_initial){
 coeffHyp <- function (hara_gamma,hara_a,hara_b){
   
 	w_max <- 100
-	w <- seq(0,w_max,length.out=100)
+	w <- seq(0,w_max,length.out=200)
 	
 	u_prime <- hara_a*(((hara_a*w)/(1-hara_gamma))+hara_b)^(hara_gamma-1)
 	u_dprime <- (hara_a^2)*(((hara_a*w)/(1-hara_gamma))+hara_b)^(hara_gamma-2)
@@ -499,7 +499,7 @@ expHelper<- function(rho,w,a,b){
 
 utilExp <- function(rho,w_initial,prob_loss,w_gain,w_loss,w_slidermax){
 	  w_max <- w_slidermax
-		w <- seq(0,w_max,0.2)
+		w <- seq(0,w_max,0.1)
 	
 	  w_low <- w_initial-w_loss
 	  w_high <- w_initial+w_gain
@@ -793,9 +793,9 @@ hypHelper <- function(w,hara_gamma,hara_a,hara_b){
 
 utilHyp <- function(w_initial,prob_loss,w_gain,w_loss,hara_gamma,hara_a,hara_b,w_slidermax,w_slidermin){
 
-	
 	  w_min <- w_slidermin
-	  w_max <- w_slidermax
+	  w_max <- ifelse(w_min==0,100,w_slidermax)
+	
 		w <- seq(w_min,w_max,(w_max-abs(w_min))/100)
 		u_w <- hypHelper(w=w,hara_gamma=hara_gamma,hara_a=hara_a,hara_b=hara_b)
 	  u_wmax <- hypHelper(w=w_max,hara_gamma=hara_gamma,hara_a=hara_a,hara_b=hara_b)
