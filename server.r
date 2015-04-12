@@ -7,7 +7,7 @@ library(reshape2)
 library(shiny)
 library(gtable)
 library(animation)
-
+library(sparkline)
 
 
 shinyServer(function(input, output) {
@@ -20,12 +20,7 @@ output$formula_text <- renderUI({
  		withMathJax(h6(subset(formula_df,selected==input$utility_choice)[2]))
 	})
 
-output$AnimPlot <- renderImage({
-  filename <- normalizePath(file.path('C:/University of Warwick/R experiments/ShinyIO/images/','Quadratic Utility Function.gif'))
-    list(src = filename,alt = paste("Image"))
-  }, deleteFile = FALSE)
 
-				
 output$slider_wealth <- renderUI({
 	if(input$utility_choice=='Quadratic Utility Function'){
     sliderInput("slider_w",h6('Initial wealth :'),min = 0,max = abs(input$slider_quad_a/(2*input$slider_quad_b)),value =abs(input$slider_quad_a/(2*input$slider_quad_b)/2))
@@ -45,7 +40,15 @@ output$slider_wealth <- renderUI({
 				}else if(quotient>0){
 					w_max <- quotient
 					w_min <- 0
+				}else if(quotient==0){
+					w_min <- 0
+					w_max <- 100
 				}
+ 	
+ 			w_initial<-(w_max-w_min)/2
+			w_gain=(w_max-w_initial)/2
+	 		w_loss=(w_initial-w_min)/2
+
   	calc_wealth <- (w_max-w_min)/2
   	sliderInput("slider_w",h6('Initial wealth :'),min = 0,max = w_max,value =calc_wealth)
   }
@@ -56,19 +59,21 @@ output$slider_loss <- renderUI({
 			#Quotient
 	 			quotient <- (-input$text_h_b*(1-input$text_h_gamma))/input$text_h_a
 			#Different cases [ui.r] later
-				if(quotient<0){
+					if(quotient<0){
 					w_min <- quotient
 					w_max <- abs(w_min)*2
-					w_initial<-(w_max-w_min)/2
-					w_gain=(w_max-w_initial)/2
-	 				w_loss=(w_initial-w_min)/2
 				}else if(quotient>0){
 					w_max <- quotient
 					w_min <- 0
-			   	w_initial<-(w_max-w_min)/2
-					w_gain=(w_max-w_initial)/2
-	 				w_loss=(w_initial-w_min)/2
+				}else if(quotient==0){
+					w_min <- 0
+					w_max <- (input$slider_w-input$slider_w/2)
 				}
+ 	
+ 			w_initial<-(w_max-w_min)/2
+			w_gain=(w_max-w_initial)/2
+	 		w_loss=(w_initial-w_min)/2
+		
     sliderInput("slider_wloss",h6('Size of loss :'),min = 0,max = w_loss,value =w_loss/2)
 }else{
 	   sliderInput("slider_wloss",h6('Size of loss :'),min = 0,max = input$slider_w/2,value =input$slider_w/4)
@@ -88,20 +93,21 @@ output$slider_gain <- renderUI({
 			#Quotient
 	 			quotient <- (-input$text_h_b*(1-input$text_h_gamma))/input$text_h_a
 			#Different cases [ui.r] later
-				if(quotient<0){
+			if(quotient<0){
 					w_min <- quotient
 					w_max <- abs(w_min)*2
-					w_initial<-(w_max-w_min)/2
-					w_gain=(w_max-w_initial)/2
-	 				w_loss=(w_initial-w_min)/2
-	
 				}else if(quotient>0){
 					w_max <- quotient
 					w_min <- 0
-					w_initial<-(w_max-w_min)/2
-					w_gain=(w_max-w_initial)/2
-	 				w_loss=(w_initial-w_min)/2
+				}else if(quotient==0){
+					w_min <- 0
+					w_max <- (input$slider_w-input$slider_w/2)
 				}
+ 	
+ 			w_initial<-(w_max-w_min)/2
+			w_gain=(w_max-w_initial)/2
+	 		w_loss=(w_initial-w_min)/2
+ 	
   	choice_maxw <- w_gain
  }
     sliderInput("slider_wgain",h6('Size of gain :'),min = 0,max =choice_maxw,value =choice_maxw/2)
@@ -121,7 +127,7 @@ output$FullPlot <- renderPlot({
 	choice_maxw <- 100
  	 uncertainty.plot(type=input$utility_choice,a=input$slider_quad_a,b=input$slider_quad_b,r=input$slider_power_r,rho=input$slider_exp_rho,hara_gamma=input$text_h_gamma,hara_a=input$text_h_a,hara_b=input$text_h_b,w_initial=input$slider_w,prob_loss=input$slider_lossprob,w_gain=input$slider_wgain,w_loss=input$slider_wloss,w_slidermax=choice_maxw)
  }else if(input$utility_choice=='General Exponential Utility (CARA)'){
-	choice_maxw <- 20
+	choice_maxw <- 100
  	 uncertainty.plot(type=input$utility_choice,a=input$slider_quad_a,b=input$slider_quad_b,r=input$slider_power_r,rho=input$slider_exp_rho,hara_gamma=input$text_h_gamma,hara_a=input$text_h_a,hara_b=input$text_h_b,w_initial=input$slider_w,prob_loss=input$slider_lossprob,w_gain=input$slider_wgain,w_loss=input$slider_wloss,w_slidermax=choice_maxw)
  }else if(input$utility_choice=='Log Utility Function'){
 	 choice_maxw <- NA
@@ -133,16 +139,18 @@ output$FullPlot <- renderPlot({
 				if(quotient<0){
 					w_min <- quotient
 					w_max <- abs(w_min)*2
-					w_initial<-(w_max-w_min)/2
-					w_gain=(w_max-w_initial)/2
-	 				w_loss=(w_initial-w_min)/2
 				}else if(quotient>0){
 					w_max <- quotient
 					w_min <- 0
-					w_initial<-(w_max-w_min)/2
-					w_gain=(w_max-w_initial)/2
-	 				w_loss=(w_initial-w_min)/2
+				}else if(quotient==0){
+					w_min <- 0
+					w_max <- (input$slider_w-input$slider_w/2)
 				}
+ 	
+ 			w_initial<-(w_max-w_min)/2
+			w_gain=(w_max-w_initial)/2
+	 		w_loss=(w_initial-w_min)/2
+		
   uncertainty.plot(type=input$utility_choice,a=input$slider_quad_a,b=input$slider_quad_b,r=input$slider_power_r,rho=input$slider_exp_rho,hara_gamma=input$text_h_gamma,hara_a=input$text_h_a,hara_b=input$text_h_b,w_initial=input$slider_w,prob_loss=input$slider_lossprob,w_gain=input$slider_wgain,w_loss=input$slider_wloss,w_slidermax=w_max,w_slidermin=w_min)
  }
 })
