@@ -7,7 +7,8 @@ shinyUI(navbarPage('Shiny',
     				column(12,headerPanel(h1(":: { King Arthur } ::",style = "font-family: 'Times New Roman', cursive;
         		font-size: 125%; line-height: 0; color: white;"), windowTitle = 'Consumer theory'),div(style = "height:30px;background-color: darkblue;"),
       		fluidRow(
-          		column(12,wellPanel(        	
+          		column(12,wellPanel(
+          			
         			helpText(h5("King Arthur",style = "font-family: 'Times New Roman',font-size: 100%;color: darkblue;")),
 					  	helpText(h6('King Arthur is a legendary British leader of the late 5th and early 6th centuries, who, according to medieval histories and romances, led the defence of Britain against Saxon invaders in the early 6th century. The details of Arthurs story are mainly composed of folklore and literary invention, and his historical existence is debated and disputed by modern historians.[2] The sparse historical background of Arthur is gleaned from various sources, including the Annales Cambriae, the Historia Brittonum, and the writings of Gildas. Arthurs name also occurs in early poetic sources such as Y Gododdin.[3]
 Arthur is a central figure in the legends making up the so-called Matter of Britain. The legendary Arthur developed as a figure of international interest largely through the popularity of Geoffrey of Monmouths fanciful and imaginative 12th-century Historia Regum Britanniae (History of the Kings of Britain).[4] In some Welsh and Breton tales and poems that date from before this work, Arthur appears either as a great warrior defending Britain from human and supernatural enemies or as a magical figure of folklore, sometimes associated with the Welsh Otherworld, Annwn.[5] How much of Geoffreys Historia was adapted from such earlier sources, rather than invented by Geoffrey himself, is unknown.
@@ -231,9 +232,9 @@ navbarMenu('Consumer Theory',
       		 ),
            	  #Hyperbolic Absolute Risk Aversion (HARA)          	
            		conditionalPanel(condition="input.utility_choice=='Hyperbolic Absolute Risk Aversion (HARA)' ",
-        			  numericInput("text_h_gamma",h6('parameter gamma :'),value = 0.9,min = NA, max = 0.9,step=0.05),
+        			  numericInput("text_h_gamma",h6('parameter gamma :'),value = 0.3,min = NA, max = 0.9,step=0.05),
            		  numericInput("text_h_a",h6('parameter a :'),value = 1,min = 0.1, max = NA),
-           		  numericInput("text_h_b",h6('parameter b :'),value = 1,min = NA, max = NA)
+           		  numericInput("text_h_b",h6('parameter b :'),value = -2,min = NA, max = NA)
      		  ),
            	withMathJax(),
          	  helpText(h6('The utility function can be used to derive the Arrow-Pratt coefficients of absolute/relative risk aversion aswell as the risk tolerance function.',style='font-size=65%')),
