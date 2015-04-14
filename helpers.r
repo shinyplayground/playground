@@ -794,9 +794,11 @@ hypHelper <- function(w,hara_gamma,hara_a,hara_b){
 utilHyp <- function(w_initial,prob_loss,w_gain,w_loss,hara_gamma,hara_a,hara_b,w_slidermax,w_slidermin){
 
 	  w_min <- w_slidermin
-	  w_max <- ifelse(w_min==0,100,w_slidermax)
+	  w_max <- w_slidermax
 	
 		w <- seq(w_min,w_max,(w_max-abs(w_min))/100)
+	  print(w)
+	
 		u_w <- hypHelper(w=w,hara_gamma=hara_gamma,hara_a=hara_a,hara_b=hara_b)
 	  u_wmax <- hypHelper(w=w_max,hara_gamma=hara_gamma,hara_a=hara_a,hara_b=hara_b)
 
@@ -805,33 +807,35 @@ utilHyp <- function(w_initial,prob_loss,w_gain,w_loss,hara_gamma,hara_a,hara_b,w
 	
 	#loss coords
 		w_low <- w_initial-w_loss
+	  print(w_low)
 		u_w_low <- hypHelper(w=w_low,hara_gamma=hara_gamma,hara_a=hara_a,hara_b=hara_b)
-  
+	 
 	#gain coords
 	  w_high <- w_initial+w_gain
 		u_w_high <- hypHelper(w=w_high,hara_gamma=hara_gamma,hara_a=hara_a,hara_b=hara_b)
-	
+	  print(u_w_high)
+
 	#gamble coords
 		w_gamble <- prob_loss*w_low+(1-prob_loss)*w_high
 		u_w_gamble <- hypHelper(w=w_gamble,hara_gamma=hara_gamma,hara_a=hara_a,hara_b=hara_b)
 	  eu_w_gamble <- prob_loss*u_w_low+(1-prob_loss)*u_w_high
-	
-	#CE coords
+
+	#CEQ coords
 		w_ceq<- (((((hara_gamma/(1-hara_gamma))*eu_w_gamble)^(1/hara_gamma))-hara_b)*(1-hara_gamma))/hara_a
-	
+
 	#Fair insurance coords
 	  w_fins <- w_initial-(prob_loss*w_loss)
 		u_w_fins <- hypHelper(w=w_fins,hara_gamma=hara_gamma,hara_a=hara_a,hara_b=hara_b)
-	
+	 
 		#Insurance
 		min_insurance <- w_initial-w_fins
 	 	risk_premium <- w_gamble-w_ceq
+	
 	 	max_insurance <- min_insurance+risk_premium
 		
 	  df <- data.frame(r=1,Min_insurance=min_insurance,Risk_premium=risk_premium,Max_insurance=max_insurance)
 	 	mdf <- melt(df,id.vars='r')
 
-  	 
 	#insurance layer
 	  insurance.layer <- ggplot(mdf)+
 		  										theme_bw()+
@@ -913,7 +917,7 @@ utilHyp <- function(w_initial,prob_loss,w_gain,w_loss,hara_gamma,hara_a,hara_b,w
                           hlt.row.exist=F,hl.row.which=c(2,3,4),hl.row.fill=c('white','red','red'),hl.row.alpha=rep(0.4,)
                 )    
 	gg.table <- ggTableDrawer(table.spec)
-		
+	
 	#Probability Layer
    	prob_df <- data.frame(rank=1,prob_loss=prob_loss,prob_gain=(1-prob_loss))
 		prob.layer <- ggplot(melt(prob_df,id.var='rank'),aes(x=rank,y=value))+
@@ -925,6 +929,8 @@ utilHyp <- function(w_initial,prob_loss,w_gain,w_loss,hara_gamma,hara_a,hara_b,w
 				            ylab('')+
   	                coord_flip()+
 		                coord_polar(theta="y")
+	
+	
 	 grid.newpage()
 			pushViewport(viewport(layout=grid.layout(3,5)))
 	    	print(zoom.layer,vp=viewport(layout.pos.row=1:3,layout.pos.col=1:3))
@@ -932,6 +938,8 @@ utilHyp <- function(w_initial,prob_loss,w_gain,w_loss,hara_gamma,hara_a,hara_b,w
 				print(prob.layer,vp=viewport(layout.pos.row=1,layout.pos.col=5))
 	      print(insurance.layer,vp=viewport(layout.pos.row=2,layout.pos.col=4:5))
 				print(gg.table,vp=viewport(layout.pos.row=3,layout.pos.col=4:5))
+
+
 }
 
 uncertainty.plot <- function(type,a,b,r,rho,hara_gamma,hara_a,hara_b,w_initial,prob_loss,w_gain,w_loss,w_slidermax,w_slidermin){
