@@ -33,24 +33,34 @@ output$slider_wealth <- renderUI({
   }else if(input$utility_choice=='Hyperbolic Absolute Risk Aversion (HARA)'){
   	#Quotient
 	 			quotient <- (-input$text_h_b*(1-input$text_h_gamma))/input$text_h_a
-			#Different cases [ui.r] later
-				if(quotient<0){
-					w_min <- quotient
-					w_max <- abs(w_min)*2
-				}else if(quotient>0){
-					w_max <- quotient
-					w_min <- 0
-				}else if(quotient==0){
-					w_min <- 0
-					w_max <- 100
-				}
- 	
- 			w_initial<-(w_max-w_min)/2
-			w_gain=(w_max-w_initial)/2
-	 		w_loss=(w_initial-w_min)/2
-
-  	calc_wealth <- (w_max-w_min)/2
-  	sliderInput("slider_w",h6('Initial wealth :'),min = 0,max = w_max,value =calc_wealth)
+# 			#Different cases [ui.r] later
+# 				if(quotient<0){
+# 					w_min <- quotient
+# 					w_max <- abs(w_min)*2
+# 				}else if(quotient>0){
+# 					w_max <- quotient
+# 					w_min <- 0
+# 				}else if(quotient==0){
+# 					w_min <- 0
+# 					w_max <- 100
+# 				} 
+  	if(input$text_h_b==0){
+  		w_min <- 0
+  		w_max <- 100
+  	  calc_wealth <- (w_max-w_min)/2
+  	}else if(input$text_h_b!=0){ 
+  					if(input$text_h_gamma<1){
+  						w_min <- quotient
+  						w_max <- abs(w_min)*2
+  						calc_wealth <- w_min
+  					}else if(input$text_h_gamma>1){
+  						w_min <- 0
+  						w_max <- quotient
+  						calc_wealth <- (w_max-w_min)/2
+  					}
+  	}
+  	
+  	sliderInput("slider_w",h6('Initial wealth :'),min = w_min,max = w_max,value =calc_wealth)
   }
 })
 	
@@ -59,21 +69,23 @@ output$slider_loss <- renderUI({
 			#Quotient
 	 			quotient <- (-input$text_h_b*(1-input$text_h_gamma))/input$text_h_a
 			#Different cases [ui.r] later
-					if(quotient<0){
-					w_min <- quotient
-					w_max <- abs(w_min)*2
-				}else if(quotient>0){
-					w_max <- quotient
-					w_min <- 0
-				}else if(quotient==0){
-					w_min <- 0
-					w_max <- (input$slider_w-input$slider_w/2)
-				}
- 	
- 			w_initial<-(w_max-w_min)/2
-			w_gain=(w_max-w_initial)/2
-	 		w_loss=(w_initial-w_min)/2
-		
+				if(input$text_h_b==0){
+  				w_min <- 0
+  				w_max <- 100
+  	  		w_loss <- (input$slider_w-w_min)/2
+  			}else if(input$text_h_b!=0){ 
+						if(input$text_h_gamma<1){
+  						w_min <- quotient
+	 						w_loss<- abs(input$slider_w-w_min)
+ 			  	
+ 			  		}else if(input$text_h_gamma>1){
+  						w_min <- 0
+  						w_max <- quotient
+  						w_initial<-(w_max-w_min)/2
+							w_gain=(w_max-w_initial)/2
+	 						w_loss=(w_initial-w_min)/2
+  					}
+  			}
     sliderInput("slider_wloss",h6('Size of loss :'),min = 0,max = w_loss,value =w_loss/2)
 }else{
 	   sliderInput("slider_wloss",h6('Size of loss :'),min = 0,max = input$slider_w/2,value =input$slider_w/4)
@@ -93,21 +105,31 @@ output$slider_gain <- renderUI({
 			#Quotient
 	 			quotient <- (-input$text_h_b*(1-input$text_h_gamma))/input$text_h_a
 			#Different cases [ui.r] later
-			if(quotient<0){
-					w_min <- quotient
-					w_max <- abs(w_min)*2
-				}else if(quotient>0){
-					w_max <- quotient
-					w_min <- 0
-				}else if(quotient==0){
-					w_min <- 0
-					w_max <- (input$slider_w-input$slider_w/2)
-				}
- 	
- 			w_initial<-(w_max-w_min)/2
-			w_gain=(w_max-w_initial)/2
-	 		w_loss=(w_initial-w_min)/2
- 	
+# 			if(quotient<0){
+# 					w_min <- quotient
+# 					w_max <- abs(w_min)*2
+# 				}else if(quotient>0){
+# 					w_max <- quotient
+# 					w_min <- 0
+# 				}else if(quotient==0){
+# 					w_min <- 0
+# 					w_max <- (input$slider_w-input$slider_w/2)
+# 				}
+ 	 if(input$text_h_b==0){
+  		w_min <- 0
+  		w_max <- 100
+ 	 		w_gain=(w_max-input$slider_w)
+ 	 }else if(input$text_h_b!=0){ 
+				if(input$text_h_gamma<1){
+  				w_min <- quotient
+  				w_max <- abs(w_min)*2
+					w_gain=(w_max-input$slider_w)
+ 			  	
+ 			  }else if(input$text_h_gamma>1){
+  				w_max <- quotient
+					w_gain=(w_max-input$slider_w)
+  			}
+ }
   	choice_maxw <- w_gain
  }
     sliderInput("slider_wgain",h6('Size of gain :'),min = 0,max =choice_maxw,value =choice_maxw/2)
@@ -136,21 +158,18 @@ output$FullPlot <- renderPlot({
 			#Quotient
 	 			quotient <- (-input$text_h_b*(1-input$text_h_gamma))/input$text_h_a
 			#Different cases [ui.r] later
-				if(quotient<0){
-					w_min <- quotient
-					w_max <- abs(w_min)*2
-				}else if(quotient>0){
-					w_max <- quotient
-					w_min <- 0
-				}else if(quotient==0){
-					w_min <- 0
-					w_max <- (input$slider_w-input$slider_w/2)
-				}
- 	
- 			w_initial<-(w_max-w_min)/2
-			w_gain=(w_max-w_initial)/2
-	 		w_loss=(w_initial-w_min)/2
-		
+ 			if(input$text_h_b==0){
+  				w_min <- 0
+  				w_max <- 100
+  		}else if(input$text_h_b!=0){ 
+ 			  		if(input$text_h_gamma<1){
+  						w_min <- quotient
+  						w_max <- abs(w_min)*2
+ 			  		}else if(input$text_h_gamma>1){
+		  				w_min <- 0
+  						w_max <- quotient
+  					}
+  		}
   uncertainty.plot(type=input$utility_choice,a=input$slider_quad_a,b=input$slider_quad_b,r=input$slider_power_r,rho=input$slider_exp_rho,hara_gamma=input$text_h_gamma,hara_a=input$text_h_a,hara_b=input$text_h_b,w_initial=input$slider_w,prob_loss=input$slider_lossprob,w_gain=input$slider_wgain,w_loss=input$slider_wloss,w_slidermax=w_max,w_slidermin=w_min)
  }
 })
