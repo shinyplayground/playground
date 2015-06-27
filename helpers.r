@@ -7,6 +7,312 @@
 # 
 
 
+prod_cobd <- function(l,k,alpha,beta){
+	(k^alpha)*(l^beta)
+}
+
+prod_lin <- function(l,k,alpha,beta){
+	(alpha*k)+(beta*l)
+}
+
+prod_ces <- function(l,k,ces_alpha,rho,gamma){
+	(ces_alpha*(k^rho)+(1-ces_alpha)*(l^rho))^(gamma/rho)
+}
+
+prod_fixed <- function(l,k,alpha,beta){
+	min(alpha*k,beta*l)
+}
+
+get_legend<-function(myggplot){
+  tmp <- ggplot_gtable(ggplot_build(myggplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)
+}
+
+
+ProductCurvesK <- function(type,l,k,alpha,beta,gamma,rho,ces_alpha,l_fixed){
+	#Testing
+	#k <- seq(0,50,by=0.1)
+	#l <- seq(0,50,by=0.1)
+
+	if(type=='Linear'){
+ 	  new.tot.prod <- prod_lin(l_fixed,k,alpha,beta)
+	  new.avg.prod <- new.tot.prod/k
+	  new.mar.prod <- rep(alpha,length(k))
+	  new.df <- data.frame(k=k,new.tot=new.tot.prod,new.avg=new.avg.prod,new.mar=new.mar.prod)
+	  ylim_max <- max(new.tot.prod)
+  } else if(type=='Cobb Douglas'){
+			new.tot.prod <- prod_cobd(l=l_fixed,k=k,alpha,beta)
+	  	new.avg.prod <- new.tot.prod/k
+	  	new.mar.prod <- (alpha*(k^(alpha-1)))*(l_fixed^beta)
+	  	new.df <- data.frame(k=k,new.tot=new.tot.prod,new.avg=new.avg.prod,new.mar=new.mar.prod)
+	  	ylim_max <- max(new.tot.prod)
+  	} else if(type=='Constant Elasticity Of Substitution'){
+  			new.tot.prod <- prod_ces(l=l_fixed,k=k,ces_alpha,rho,gamma)
+	  		new.avg.prod <- new.tot.prod/k
+	  		new.mar.prod <- ((gamma/rho)*((ces_alpha*(k^rho))+(1-ces_alpha)*(l_fixed^rho))^((gamma/rho)-1))*(rho*(ces_alpha)*(k^(rho-1)))
+	  		new.df <- data.frame(k=k,new.tot=new.tot.prod,new.avg=new.avg.prod,new.mar=new.mar.prod)
+	  		ylim_max <- max(new.tot.prod)
+  		} else if(type=='Fixed Proportion'){
+     			new.tot.prod <- alpha*k
+     			new.avg.prod <- new.tot.prod/k
+     			new.mar.prod <- rep(alpha,length(k))
+     			new.df <- data.frame(k=k,new.tot=new.tot.prod,new.avg=new.avg.prod,new.mar=new.mar.prod)
+	  		  ylim_max <- max(new.tot.prod)
+       	}
+
+gg_tot_prod <- ggplot(data=new.df)+
+									geom_line(aes(x=k,y=new.tot),size=1,col='black')+
+									theme(plot.title=element_text(size=12*0.9))+ 								
+  								labs(title=paste('Capital Product Curves For :',type,'Production Function\n{with labour fixed at l=',l_fixed,'}'))+
+									xlab('')+
+									ylab('Production')+
+									xlim(0,max(k))
+
+melted <- melt(new.df,id.vars='k')
+
+gg_legend <- ggplot(data=melted)+
+							geom_line(aes(x=k,col=variable,y=value),size=1)+
+							scale_colour_manual(values=c('black','darkred','blue'),name="Product Curves",labels=c('Total','Average','Marginal'))+
+	            theme(legend.position='top')
+	            
+leg_strip <- get_legend(gg_legend)
+
+gg_deriv_prod <- ggplot(data=new.df)+
+								 	geom_line(aes(x=k,y=new.avg),size=1,col='darkred',linetype='dashed')+
+									geom_line(aes(x=k,y=new.mar),size=1,col='blue',linetype='dotted')+
+  								theme(plot.title=element_text(size=12*0.9))+ 								
+	                xlab('Capital (k)')+
+									ylab('Production')+
+									xlim(0,max(k))
+
+grid.arrange(heights=c(3,1.5,0.5),gg_tot_prod,gg_deriv_prod,leg_strip,nrow=3)
+}
+
+
+
+ProductCurvesL <- function(type,l,k,alpha,beta,gamma,rho,ces_alpha,k_fixed){
+	#Testing
+	#k <- seq(1,50,by=0.1)
+	#l <- seq(1,50,by=0.1)
+  
+	if(type=='Linear'){
+ 	  new.tot.prod <- prod_lin(l,k_fixed,alpha,beta)
+	  new.avg.prod <- new.tot.prod/l
+	  new.mar.prod <- rep(beta,length(l))
+	  new.df <- data.frame(l=l,new.tot=new.tot.prod,new.avg=new.avg.prod,new.mar=new.mar.prod)
+	  ylim_max <- max(new.tot.prod)
+  } else if(type=='Cobb Douglas'){
+			new.tot.prod <- prod_cobd(l=l,k=k_fixed,alpha,beta)
+	  	new.avg.prod <- new.tot.prod/l
+	  	new.mar.prod <- (beta*(l^(beta-1)))*(k_fixed^alpha)
+	  	new.df <- data.frame(l=l,new.tot=new.tot.prod,new.avg=new.avg.prod,new.mar=new.mar.prod)
+	  	ylim_max <- max(new.tot.prod)
+  	} else if(type=='Constant Elasticity Of Substitution'){
+  			new.tot.prod <- prod_ces(l=l,k=k_fixed,ces_alpha,rho,gamma)
+	  		new.avg.prod <- new.tot.prod/l
+	  		new.mar.prod <- ((gamma/rho)*((ces_alpha*(k_fixed^rho))+(1-ces_alpha)*(l^rho))^((gamma/rho)-1))*(rho*(1-ces_alpha)*(l^(rho-1)))
+	  		new.df <- data.frame(l=l,new.tot=new.tot.prod,new.avg=new.avg.prod,new.mar=new.mar.prod)
+	  		ylim_max <- max(new.tot.prod)
+  		} else if(type=='Fixed Proportion'){
+     			new.tot.prod <- beta*l
+     			new.avg.prod <- new.tot.prod/l
+     			new.mar.prod <- rep(beta,length(l))
+     			new.df <- data.frame(l=l,new.tot=new.tot.prod,new.avg=new.avg.prod,new.mar=new.mar.prod)
+	  		  ylim_max <- max(new.tot.prod)
+       	}
+
+gg_tot_prod <- ggplot(data=new.df)+
+									geom_line(aes(x=l,y=new.tot),size=1,col='black')+
+									theme(plot.title=element_text(size=12*0.9))+ 								
+  								labs(title=paste('Labour Product Curves For :',type,'Production Function\n{with capital fixed at k=',k_fixed,'}'))+
+									xlab('')+
+									ylab('Production')+
+									xlim(0,max(l))
+
+melted <- melt(new.df,id.vars='l')
+
+gg_legend <- ggplot(data=melted)+
+							geom_line(aes(x=l,col=variable,y=value),size=1)+
+							scale_colour_manual(values=c('black','darkred','blue'),name="Product Curves",labels=c('Total','Average','Marginal'))+
+	            theme(legend.position='top')
+	            
+leg_strip <- get_legend(gg_legend)
+
+gg_deriv_prod <- ggplot(data=new.df)+
+								 	geom_line(aes(x=l,y=new.avg),size=1,col='darkred',linetype='dotted')+
+									geom_line(aes(x=l,y=new.mar),size=1,col='blue',linetype='dotted')+
+  								theme(plot.title=element_text(size=12*0.9))+ 								
+	                xlab('Labour (l)')+
+									ylab('Production')+
+									xlim(0,max(l))
+
+grid.arrange(heights=c(3,1.5,0.5),gg_tot_prod,gg_deriv_prod,leg_strip,nrow=3)
+}
+
+
+
+Isoquant.plot <- function(type,l,k,alpha,beta,gamma,rho,ces_alpha,q1,q2,q3,kl_ratio){
+  #Testing
+# 	k <- seq(0,50,by=0.1)
+# 	l <- seq(0,50,by=0.1)
+#   alpha <- beta <- 0.5
+#   kl_ratio <- 11
+#   q1 <-10
+#   q2 <-20
+#   q3 <-30
+#   
+	planes.height <- c(q1,q2,q3)
+  isq_k <- isq_k_v <- isq_k_h <- matrix(data=NA,nrow=length(l),ncol=length(planes.height))
+  isq_col <-c(adjustcolor("red", alpha.f = 1),adjustcolor("green", alpha.f = 1),adjustcolor("blue", alpha.f = 1))
+  mrts <- NULL
+  
+	if(type=='Linear'){
+		for(i in 1:length(planes.height)){
+			isq_k[(1:length(l)),i] <- (planes.height[i]-(beta*l))/alpha
+			mrts[i] <- -(beta/alpha)
+		}
+		
+		} else if(type=='Cobb Douglas'){
+				for(i in 1:length(planes.height)){
+					isq_k[(1:length(l)),i] <- (planes.height[i]/(l^beta))^(1/alpha)
+					mrts[i] <- -(beta/alpha)*(kl_ratio)
+				}
+			  
+			} else if(type=='Constant Elasticity Of Substitution'){
+			 		for(i in 1:length(planes.height)){
+						isq_k[(1:length(l)),i] <- (((planes.height[i]^(rho/gamma))-((1-ces_alpha)*(l^rho)))/ces_alpha)^(1/rho)
+			 			mrts[i] <- -((1-ces_alpha)/ces_alpha)*(kl_ratio)*((1/kl_ratio)^rho)
+			 		}
+			 	} else if(type=='Fixed Proportion'){
+				 		for(i in 1:length(planes.height)){
+				 			isq_k_h[1:(i/beta)-1,i] <- NA
+				 			isq_k_h[(i/beta):length(l),i] <- i/alpha
+				 			isq_k_v[1:(i/alpha)-1,i] <- NA
+				 			isq_k_v[(i/alpha):length(k),i] <- i/beta
+				 		}	
+				
+			}
+
+   #Plot the isoquants
+   if(type=='Fixed Proportion'){
+   		isq <- data.frame(cbind(l,isq_k_h))
+			colnames(isq) <- c('l','k_q1','k_q2','k_q3')
+			melt_isq <- melt(isq,id.vars='l')
+			
+		  gg_fixed <- ggplot(data=melt_isq,aes(x=l,col=variable,y=value))+
+								 		geom_line(size=1)
+										
+		  isq <- data.frame(cbind(l,isq_k_v))
+			colnames(isq) <- c('l','k_q1','k_q2','k_q3')
+			melt_isq <- melt(isq,id.vars='l')
+			
+			gg_fixed + geom_line(data=melt_isq,aes(x=value,col=variable,y=l),size=1)+
+										geom_hline(yintercept=0,size=1)+
+										geom_vline(xintercept=0,size=1)+
+										theme(legend.position='bottom',plot.title=element_text(size=12*0.9))+ 								
+	    							labs(title=paste(type,'Production Function','Isoquants\nfor chosen {q1,q2,q3}'))+
+		  							xlab('Labour(l)')+
+		  							ylab('Capital(k)')+
+									  xlim(0,max(l))+
+										ylim(0,max(k))+
+										scale_colour_manual(values=isq_col,name="Output",labels=paste('q=f(k,l)=',planes.height))
+   	
+   } else {
+   	      kl_coord <- kl_slope <- NULL
+  				isq <- data.frame(cbind(l,isq_k))
+					colnames(isq) <- c('l','k_q1','k_q2','k_q3')
+					melt_isq <- melt(isq,id.vars='l')
+					
+					kl_ratio_q <- isq_k/l
+					colnames(kl_ratio_q) <- c('kl1','kl2','kl3')
+					temp <- round(cbind(isq,kl_ratio_q),3)
+					
+					
+					for(i in 5:7){
+						kl_coord<-rbind(kl_coord,tail(temp[temp[,i]>=kl_ratio,c('l','k_q1','k_q2','k_q3')],1))
+					}
+					
+					kl_temp <- diag(as.matrix(kl_coord)[,-1])
+					kl_points <- data.frame(kl_coord[,1],kl_temp)
+					kl_slope <- kl_coord[,2]/kl_coord[,1]
+					
+					kl_coord <- cbind(kl_points,kl_slope,mrts)
+					colnames(kl_coord) <- c('l_coord','k_coord','slope','mrts')
+					
+					ggplot(data=melt_isq,aes(x=l,col=variable,y=value))+
+						geom_line(size=1)+
+						geom_hline(yintercept=0,size=1)+
+						geom_vline(xintercept=0,size=1)+
+						geom_point(data=kl_coord,aes(x=l_coord,y=k_coord),col='black',size=3)+
+						geom_text(data=kl_coord,aes(x=l_coord-3,y=k_coord,label=paste('MRTS = ',round(mrts,2),sep='')),col='black',size=3)+
+						geom_abline(intercept=0,slope=kl_slope[1],linetype='dashed',size=0.5,col='black')+
+						theme(legend.position='bottom',plot.title=element_text(size=12*0.9))+ 								
+	    			labs(title=paste(type,'Production Function','Isoquants\nfor chosen {q1,q2,q3}'))+
+		  			xlab('Labour(l)')+
+		  			ylab('Capital(k)')+
+						xlim(0,max(l))+
+						ylim(0,max(k))+
+						scale_colour_manual(values=isq_col,name="Output",labels=paste('q=f(k,l)=',planes.height))
+ 					}
+		  
+	}
+
+
+Production.3D <- function(type,l,k,alpha,beta,gamma,rho,ces_alpha,q1,q2,q3){
+	#Testing
+# 	k <- c(0:50)
+# 	l <- c(0:50)
+#   alpha<-beta<-0.5
+#   q1<-20
+#   q2<-30
+#   q3<-10
+#   type='gg'
+  
+  plane.heights <- c(q1,q2,q3)
+
+  if(type=='Fixed Proportion'){
+  	for(i in 1:length(l)){
+  		q[i] <- prod_fixed(l[i],k[i],alpha,beta)
+  	}
+  	mat <- matrix(data=0,nrow=length(l),ncol=length(k))
+  	
+  	for(i in 1:length(l)){
+  		mat[i,i:length(l)] <- q[i]
+  		mat[i:length(l),i] <- q[i]
+  	}
+   q<-mat
+
+  }else if(type=='Constant Elasticity Of Substitution'){
+  	q <- outer(l,k,prod_ces,ces_alpha=ces_alpha,rho=rho,gamma=gamma)
+
+  } else if(type=='Linear'){
+  	q <- outer(l,k,prod_lin,alpha=alpha,beta=beta)
+
+  } else if(type=='Cobb Douglas'){
+		q <- outer(l,k,prod_cobd,alpha=alpha,beta=beta)
+  }
+  
+  #Contours and Colour options
+  	colours <-colorRampPalette(c("darkblue", "white"))(20)
+		contour.list <- list(nlevels=20,drawlabels=F,lty=1,lwd=1,col=colours)
+  	colkey.list <- list(cex.axis=0.7,col.clab = "black", line.clab = 1, side.clab = 3,cex.clab=0.65,side=2,length=1,dist=-0.1)
+	  imgcol <-c(adjustcolor("red", alpha.f = 0.2),adjustcolor("green", alpha.f = 0.2),adjustcolor("blue", alpha.f = 0.2))
+  
+  #Hill plot
+  	persp3D(plot=TRUE,colkey=FALSE,zlab='Production[q]',ylab='Capital [k]',xlab='Labour [l]',main=paste(type,'Production Function'),bty='u',col.axis='black',col.panel=adjustcolor('lightgrey',alpha.f=0.2),lwd.panel=0.3,lwd.grid=0.5,col.grid='grey',box=T,ticktype='detailed',axes=TRUE, r = 10, d = 2,shade=0, theta =70, phi = 10,contour=contour.list,border=NA,l,k,q, colvar = q,col=colours,cex.axis=0.7,cex.main=0.8,cex.lab=0.7)
+      
+	#Horizontal planes
+  	col=1
+		for(i in plane.heights){
+    	image3D(x=l,y=k,z=i,col= imgcol[col], zlim = range(q),add=TRUE)
+	    text3D(x =max(l), y = max(k), z = i,labels = paste('f(k,l)=q=',i),add = TRUE, adj = 0,cex=0.7)
+      col=col+1
+	   }
+   
+}
+
 quadHelper <- function(a,b,w){
 	return((a*w)-(b*(w^2)))
 }
@@ -86,7 +392,7 @@ coeffPower <- function(a,b,r,w_initial) {
 
 coeffExp <- function(rho,w_initial,w_gain,w_loss){
 	w_max <- 20
-	w <- seq(1,w_max,length.out=200)
+	w <- seq(0,w_max,0.2)
 	
 	w_low <- w_initial-w_loss
 	w_high <- w_initial+w_gain
@@ -126,7 +432,7 @@ coeffQuad <- function(a,b,w_initial){
 
 coeffLog <- function(w_initial){
 	w_max <- 100
-	w <- seq(1,w_max,length.out=200)
+	w <- c(1:w_max)
 	u_prime <- 1/w
 	u_dprime <- -1/(w^2)
 	r_a <- 1/w
@@ -143,7 +449,7 @@ coeffLog <- function(w_initial){
 coeffHyp <- function (hara_gamma,hara_a,hara_b){
   
 	w_max <- 100
-	w <- seq(0,w_max,length.out=200)
+	w <- seq(0,w_max,length.out=100)
 	
 	u_prime <- hara_a*(((hara_a*w)/(1-hara_gamma))+hara_b)^(hara_gamma-1)
 	u_dprime <- (hara_a^2)*(((hara_a*w)/(1-hara_gamma))+hara_b)^(hara_gamma-2)
@@ -499,7 +805,7 @@ expHelper<- function(rho,w,a,b){
 
 utilExp <- function(rho,w_initial,prob_loss,w_gain,w_loss,w_slidermax){
 	  w_max <- w_slidermax
-		w <- seq(0,w_max,0.1)
+		w <- seq(0,w_max,0.2)
 	
 	  w_low <- w_initial-w_loss
 	  w_high <- w_initial+w_gain
@@ -793,12 +1099,10 @@ hypHelper <- function(w,hara_gamma,hara_a,hara_b){
 
 utilHyp <- function(w_initial,prob_loss,w_gain,w_loss,hara_gamma,hara_a,hara_b,w_slidermax,w_slidermin){
 
+	
 	  w_min <- w_slidermin
 	  w_max <- w_slidermax
-	
 		w <- seq(w_min,w_max,(w_max-abs(w_min))/100)
-	  print(w)
-	
 		u_w <- hypHelper(w=w,hara_gamma=hara_gamma,hara_a=hara_a,hara_b=hara_b)
 	  u_wmax <- hypHelper(w=w_max,hara_gamma=hara_gamma,hara_a=hara_a,hara_b=hara_b)
 
@@ -807,35 +1111,33 @@ utilHyp <- function(w_initial,prob_loss,w_gain,w_loss,hara_gamma,hara_a,hara_b,w
 	
 	#loss coords
 		w_low <- w_initial-w_loss
-	  print(w_low)
 		u_w_low <- hypHelper(w=w_low,hara_gamma=hara_gamma,hara_a=hara_a,hara_b=hara_b)
-	 
+  
 	#gain coords
 	  w_high <- w_initial+w_gain
 		u_w_high <- hypHelper(w=w_high,hara_gamma=hara_gamma,hara_a=hara_a,hara_b=hara_b)
-	  print(u_w_high)
-
+	
 	#gamble coords
 		w_gamble <- prob_loss*w_low+(1-prob_loss)*w_high
 		u_w_gamble <- hypHelper(w=w_gamble,hara_gamma=hara_gamma,hara_a=hara_a,hara_b=hara_b)
 	  eu_w_gamble <- prob_loss*u_w_low+(1-prob_loss)*u_w_high
-
-	#CEQ coords
+	
+	#CE coords
 		w_ceq<- (((((hara_gamma/(1-hara_gamma))*eu_w_gamble)^(1/hara_gamma))-hara_b)*(1-hara_gamma))/hara_a
-
+	
 	#Fair insurance coords
 	  w_fins <- w_initial-(prob_loss*w_loss)
 		u_w_fins <- hypHelper(w=w_fins,hara_gamma=hara_gamma,hara_a=hara_a,hara_b=hara_b)
-	 
+	
 		#Insurance
 		min_insurance <- w_initial-w_fins
 	 	risk_premium <- w_gamble-w_ceq
-	
 	 	max_insurance <- min_insurance+risk_premium
 		
 	  df <- data.frame(r=1,Min_insurance=min_insurance,Risk_premium=risk_premium,Max_insurance=max_insurance)
 	 	mdf <- melt(df,id.vars='r')
 
+  	 
 	#insurance layer
 	  insurance.layer <- ggplot(mdf)+
 		  										theme_bw()+
@@ -917,7 +1219,7 @@ utilHyp <- function(w_initial,prob_loss,w_gain,w_loss,hara_gamma,hara_a,hara_b,w
                           hlt.row.exist=F,hl.row.which=c(2,3,4),hl.row.fill=c('white','red','red'),hl.row.alpha=rep(0.4,)
                 )    
 	gg.table <- ggTableDrawer(table.spec)
-	
+		
 	#Probability Layer
    	prob_df <- data.frame(rank=1,prob_loss=prob_loss,prob_gain=(1-prob_loss))
 		prob.layer <- ggplot(melt(prob_df,id.var='rank'),aes(x=rank,y=value))+
@@ -929,8 +1231,6 @@ utilHyp <- function(w_initial,prob_loss,w_gain,w_loss,hara_gamma,hara_a,hara_b,w
 				            ylab('')+
   	                coord_flip()+
 		                coord_polar(theta="y")
-	
-	
 	 grid.newpage()
 			pushViewport(viewport(layout=grid.layout(3,5)))
 	    	print(zoom.layer,vp=viewport(layout.pos.row=1:3,layout.pos.col=1:3))
@@ -938,8 +1238,6 @@ utilHyp <- function(w_initial,prob_loss,w_gain,w_loss,hara_gamma,hara_a,hara_b,w
 				print(prob.layer,vp=viewport(layout.pos.row=1,layout.pos.col=5))
 	      print(insurance.layer,vp=viewport(layout.pos.row=2,layout.pos.col=4:5))
 				print(gg.table,vp=viewport(layout.pos.row=3,layout.pos.col=4:5))
-
-
 }
 
 uncertainty.plot <- function(type,a,b,r,rho,hara_gamma,hara_a,hara_b,w_initial,prob_loss,w_gain,w_loss,w_slidermax,w_slidermin){
@@ -2209,3 +2507,4 @@ Lumpsum.Principle <- function(original2d,x_tax){
 		    	scale_x_continuous(limit = c(0, xmax),expand=c(0,0))+
 		    	scale_y_continuous(limit = c(0, ymax),expand=c(0,0))
 }
+
