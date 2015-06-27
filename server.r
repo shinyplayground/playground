@@ -7,20 +7,30 @@ library(reshape2)
 library(shiny)
 library(gtable)
 library(animation)
-library(sparkline)
+library(grDevices)
+
 
 
 shinyServer(function(input, output) {
 	
 	dyn_slider_mat <- matrix(cbind(c(1,2,3,4,5),c(0,-1,-2,-3,-4),c(4,3,2,1,0)),ncol=3)	
 	formula_df <- data.frame(selected=c('Quadratic Utility Function','Power Utility Function (CRRA)','General Exponential Utility (CARA)','Log Utility Function','Hyperbolic Absolute Risk Aversion (HARA)'),formula=c('$$U(w)=aw-bw^2$$','$$U(w)=\\frac{w^\\left(1-r\\right)}{1-r}\\!$$','$$U(w)=A-B*\\exp\\left(-\\rho/w\\right)$$','$$U(w)=\\ln\\left(w\\right)$$','$$U(w)=\\frac{1-\\gamma}{\\gamma}\\left(\\frac{aw}{1-\\gamma}+b\\right)^\\gamma\\!$$'))
-         	 
+	prod_df <- data.frame(selected=c('Linear','Fixed Proportion','Cobb Douglas','Constant Elasticity Of Substitution'),formula=c('$$q=f(k,l)=\\alpha k+\\beta l$$','$$q=f(k,l)=min(\\alpha k,\\beta l)$$','$$q=f(k,l)=Ak^\\alpha l^\\beta$$','$$q=f(k,l)=(\\alpha k^\\rho +(1-\\alpha) l^\\rho )^\\left(\\gamma/\\rho\\right)$$'))
 
 output$formula_text <- renderUI({ 
  		withMathJax(h6(subset(formula_df,selected==input$utility_choice)[2]))
 	})
+	
+output$formula_production <- renderUI({ 
+ 		withMathJax(h6(subset(prod_df,selected==input$production_choice)[2]))
+	})
+	
+output$AnimPlot <- renderImage({
+  filename <- normalizePath(file.path('C:/University of Warwick/R experiments/ShinyIO/images/','Quadratic Utility Function.gif'))
+    list(src = filename,alt = paste("Image"))
+  }, deleteFile = FALSE)
 
-
+				
 output$slider_wealth <- renderUI({
 	if(input$utility_choice=='Quadratic Utility Function'){
     sliderInput("slider_w",h6('Initial wealth :'),min = 0,max = abs(input$slider_quad_a/(2*input$slider_quad_b)),value =abs(input$slider_quad_a/(2*input$slider_quad_b)/2))
@@ -33,34 +43,16 @@ output$slider_wealth <- renderUI({
   }else if(input$utility_choice=='Hyperbolic Absolute Risk Aversion (HARA)'){
   	#Quotient
 	 			quotient <- (-input$text_h_b*(1-input$text_h_gamma))/input$text_h_a
-# 			#Different cases [ui.r] later
-# 				if(quotient<0){
-# 					w_min <- quotient
-# 					w_max <- abs(w_min)*2
-# 				}else if(quotient>0){
-# 					w_max <- quotient
-# 					w_min <- 0
-# 				}else if(quotient==0){
-# 					w_min <- 0
-# 					w_max <- 100
-# 				} 
-  	if(input$text_h_b==0){
-  		w_min <- 0
-  		w_max <- 100
-  	  calc_wealth <- (w_max-w_min)/2
-  	}else if(input$text_h_b!=0){ 
-  					if(input$text_h_gamma<1){
-  						w_min <- quotient
-  						w_max <- abs(w_min)*2
-  						calc_wealth <- w_min
-  					}else if(input$text_h_gamma>1){
-  						w_min <- 0
-  						w_max <- quotient
-  						calc_wealth <- (w_max-w_min)/2
-  					}
-  	}
-  	
-  	sliderInput("slider_w",h6('Initial wealth :'),min = w_min,max = w_max,value =calc_wealth)
+			#Different cases [ui.r] later
+				if(quotient<0){
+					w_min <- quotient
+					w_max <- abs(w_min)*2
+				}else if(quotient>0){
+					w_max <- quotient
+					w_min <- 0
+				}
+  	calc_wealth <- (w_max-w_min)/2
+  	sliderInput("slider_w",h6('Initial wealth :'),min = 0,max = w_max,value =calc_wealth)
   }
 })
 	
@@ -69,23 +61,19 @@ output$slider_loss <- renderUI({
 			#Quotient
 	 			quotient <- (-input$text_h_b*(1-input$text_h_gamma))/input$text_h_a
 			#Different cases [ui.r] later
-				if(input$text_h_b==0){
-  				w_min <- 0
-  				w_max <- 100
-  	  		w_loss <- (input$slider_w-w_min)/2
-  			}else if(input$text_h_b!=0){ 
-						if(input$text_h_gamma<1){
-  						w_min <- quotient
-	 						w_loss<- abs(input$slider_w-w_min)
- 			  	
- 			  		}else if(input$text_h_gamma>1){
-  						w_min <- 0
-  						w_max <- quotient
-  						w_initial<-(w_max-w_min)/2
-							w_gain=(w_max-w_initial)/2
-	 						w_loss=(w_initial-w_min)/2
-  					}
-  			}
+				if(quotient<0){
+					w_min <- quotient
+					w_max <- abs(w_min)*2
+					w_initial<-(w_max-w_min)/2
+					w_gain=(w_max-w_initial)/2
+	 				w_loss=(w_initial-w_min)/2
+				}else if(quotient>0){
+					w_max <- quotient
+					w_min <- 0
+			   	w_initial<-(w_max-w_min)/2
+					w_gain=(w_max-w_initial)/2
+	 				w_loss=(w_initial-w_min)/2
+				}
     sliderInput("slider_wloss",h6('Size of loss :'),min = 0,max = w_loss,value =w_loss/2)
 }else{
 	   sliderInput("slider_wloss",h6('Size of loss :'),min = 0,max = input$slider_w/2,value =input$slider_w/4)
@@ -105,31 +93,20 @@ output$slider_gain <- renderUI({
 			#Quotient
 	 			quotient <- (-input$text_h_b*(1-input$text_h_gamma))/input$text_h_a
 			#Different cases [ui.r] later
-# 			if(quotient<0){
-# 					w_min <- quotient
-# 					w_max <- abs(w_min)*2
-# 				}else if(quotient>0){
-# 					w_max <- quotient
-# 					w_min <- 0
-# 				}else if(quotient==0){
-# 					w_min <- 0
-# 					w_max <- (input$slider_w-input$slider_w/2)
-# 				}
- 	 if(input$text_h_b==0){
-  		w_min <- 0
-  		w_max <- 100
- 	 		w_gain=(w_max-input$slider_w)
- 	 }else if(input$text_h_b!=0){ 
-				if(input$text_h_gamma<1){
-  				w_min <- quotient
-  				w_max <- abs(w_min)*2
-					w_gain=(w_max-input$slider_w)
- 			  	
- 			  }else if(input$text_h_gamma>1){
-  				w_max <- quotient
-					w_gain=(w_max-input$slider_w)
-  			}
- }
+				if(quotient<0){
+					w_min <- quotient
+					w_max <- abs(w_min)*2
+					w_initial<-(w_max-w_min)/2
+					w_gain=(w_max-w_initial)/2
+	 				w_loss=(w_initial-w_min)/2
+	
+				}else if(quotient>0){
+					w_max <- quotient
+					w_min <- 0
+					w_initial<-(w_max-w_min)/2
+					w_gain=(w_max-w_initial)/2
+	 				w_loss=(w_initial-w_min)/2
+				}
   	choice_maxw <- w_gain
  }
     sliderInput("slider_wgain",h6('Size of gain :'),min = 0,max =choice_maxw,value =choice_maxw/2)
@@ -141,6 +118,228 @@ output$slider <- renderUI({
 		sliderInput("slider_pxchange",h6('Change price of good x by the following amount :'),min = dyn_slider_mat[input$slider_px,2],max = dyn_slider_mat[input$slider_px,3],value = 0)
 })
 
+
+output$IsoquantPlot <- renderPlot({
+	  l_range <- k_range <- seq(1,50,by=0.1)
+		if(input$production_choice=='Linear'){
+		Isoquant.plot(type='Linear',
+									 l=l_range,
+		               k=k_range,
+									 alpha=input$slider_lin_a,
+									 beta=input$slider_lin_b,
+									 gamma=0,
+			             rho=0,
+			             ces_alpha=0,
+									 q1=input$slider_pd_q1,
+			             q2=input$slider_pd_q2,
+									 q3=input$slider_pd_q3,
+	 			           kl_ratio=input$slider_kl
+				)
+	} else if(input$production_choice=='Cobb Douglas'){
+	 		Isoquant.plot(type='Cobb Douglas',
+									 l=l_range,
+		               k=k_range,
+									 alpha=input$slider_cd_a,
+									 beta=input$slider_cd_b,
+									 gamma=0,
+			             rho=0,
+			             ces_alpha=0,
+									 q1=input$slider_pd_q1,
+			             q2=input$slider_pd_q2,
+									 q3=input$slider_pd_q3,
+	 			           kl_ratio=input$slider_kl
+				)
+	} else if (input$production_choice=='Fixed Proportion'){
+	 		Isoquant.plot(type='Fixed Proportion',
+									 l=l_range,
+		               k=k_range,
+									 alpha=input$slider_fx_a,
+									 beta=input$slider_fx_b,
+									 gamma=0,
+			             rho=0,
+			             ces_alpha=0,
+									 q1=input$slider_pd_q1,
+			             q2=input$slider_pd_q2,
+									 q3=input$slider_pd_q3,
+	 			           kl_ratio=input$slider_kl
+				)
+	} else if (input$production_choice=='Constant Elasticity Of Substitution'){
+	 		Isoquant.plot(type='Constant Elasticity Of Substitution',
+									 l=l_range,
+		               k=k_range,
+									 alpha=0,
+									 beta=0,
+									 gamma=input$slider_ces_gamma,
+			             rho=input$slider_ces_rho,
+			             ces_alpha=input$slider_ces_alpha,
+									 q1=input$slider_pd_q1,
+			             q2=input$slider_pd_q2,
+									 q3=input$slider_pd_q3,
+	 			           kl_ratio=input$slider_kl
+				)
+	 }
+})
+output$ProductCurveCapital <- renderPlot({
+	l_range <- k_range <- seq(1,50,by=0.1)
+	if(input$production_choice=='Linear'){
+		ProductCurvesK(type='Linear',
+									 l=l_range,
+		               k=k_range,
+									 alpha=input$slider_lin_a,
+									 beta=input$slider_lin_b,
+									 gamma=0,
+			             rho=0,
+			             ces_alpha=0,
+                   l_fixed=input$slider_pd_l
+				)
+	} else if(input$production_choice=='Cobb Douglas'){
+	 		ProductCurvesK(type='Cobb Douglas',
+									 l=l_range,
+		               k=k_range,
+									 alpha=input$slider_cd_a,
+									 beta=input$slider_cd_b,
+									 gamma=0,
+			             rho=0,
+			             ces_alpha=0,
+                   l_fixed=input$slider_pd_l
+
+				)
+	} else if (input$production_choice=='Fixed Proportion'){
+	 	ProductCurvesK(type='Fixed Proportion',
+									 l=l_range,
+		               k=k_range,
+									 alpha=input$slider_fx_a,
+									 beta=input$slider_fx_b,
+									 gamma=0,
+			             rho=0,
+			             ces_alpha=0,
+                   l_fixed=input$slider_pd_l
+
+				)
+	} else if (input$production_choice=='Constant Elasticity Of Substitution'){
+	 	ProductCurvesK(type='Constant Elasticity Of Substitution',
+									 l=l_range,
+		               k=k_range,
+									 alpha=0,
+									 beta=0,
+									 gamma=input$slider_ces_gamma,
+			             rho=input$slider_ces_rho,
+			             ces_alpha=input$slider_ces_alpha,
+                   l_fixed=input$slider_pd_l
+				)
+	 }
+})
+
+
+output$ProductCurveLabour <- renderPlot({
+	l_range <- k_range <- seq(1,50,by=0.1)
+	if(input$production_choice=='Linear'){
+		ProductCurvesL(type='Linear',
+									 l=l_range,
+		               k=k_range,
+									 alpha=input$slider_lin_a,
+									 beta=input$slider_lin_b,
+									 gamma=0,
+			             rho=0,
+			             ces_alpha=0,
+                   k_fixed=input$slider_pd_k
+				)
+	} else if(input$production_choice=='Cobb Douglas'){
+	 		ProductCurvesL(type='Cobb Douglas',
+									 l=l_range,
+		               k=k_range,
+									 alpha=input$slider_cd_a,
+									 beta=input$slider_cd_b,
+									 gamma=0,
+			             rho=0,
+			             ces_alpha=0,
+                   k_fixed=input$slider_pd_k
+
+				)
+	} else if (input$production_choice=='Fixed Proportion'){
+	 	ProductCurvesL(type='Fixed Proportion',
+									 l=l_range,
+		               k=k_range,
+									 alpha=input$slider_fx_a,
+									 beta=input$slider_fx_b,
+									 gamma=0,
+			             rho=0,
+			             ces_alpha=0,
+                   k_fixed=input$slider_pd_k
+
+				)
+	} else if (input$production_choice=='Constant Elasticity Of Substitution'){
+	 	ProductCurvesL(type='Constant Elasticity Of Substitution',
+									 l=l_range,
+		               k=k_range,
+									 alpha=0,
+									 beta=0,
+									 gamma=input$slider_ces_gamma,
+			             rho=input$slider_ces_rho,
+			             ces_alpha=input$slider_ces_alpha,
+                   k_fixed=input$slider_pd_k
+				)
+	 }
+})
+
+output$ProductionPlot <- renderPlot({
+	l_range <- k_range <- c(0:50)
+	if(input$production_choice=='Linear'){
+		Production.3D(type='Linear',
+									 l=l_range,
+		               k=k_range,
+									 alpha=input$slider_lin_a,
+									 beta=input$slider_lin_b,
+									 gamma=0,
+			             rho=0,
+			             ces_alpha=0,
+									 q1=input$slider_pd_q1,
+			             q2=input$slider_pd_q2,
+									 q3=input$slider_pd_q3
+				)
+	} else if(input$production_choice=='Cobb Douglas'){
+	 		Production.3D(type='Cobb Douglas',
+									 l=l_range,
+		               k=k_range,
+									 alpha=input$slider_cd_a,
+									 beta=input$slider_cd_b,
+									 gamma=0,
+			             rho=0,
+			             ces_alpha=0,
+									 q1=input$slider_pd_q1,
+			             q2=input$slider_pd_q2,
+									 q3=input$slider_pd_q3
+				)
+	} else if (input$production_choice=='Fixed Proportion'){
+	 	Production.3D(type='Fixed Proportion',
+									 l=l_range,
+		               k=k_range,
+									 alpha=input$slider_fx_a,
+									 beta=input$slider_fx_b,
+									 gamma=0,
+			             rho=0,
+			             ces_alpha=0,
+									 q1=input$slider_pd_q1,
+			             q2=input$slider_pd_q2,
+									 q3=input$slider_pd_q3
+				)
+	} else if (input$production_choice=='Constant Elasticity Of Substitution'){
+	 	Production.3D(type='Constant Elasticity Of Substitution',
+									 l=l_range,
+		               k=k_range,
+									 alpha=0,
+									 beta=0,
+									 gamma=input$slider_ces_gamma,
+			             rho=input$slider_ces_rho,
+			             ces_alpha=input$slider_ces_alpha,
+									 q1=input$slider_pd_q1,
+			             q2=input$slider_pd_q2,
+									 q3=input$slider_pd_q3
+				)
+	 }
+})
+
+
 output$FullPlot <- renderPlot({
  if(input$utility_choice=='Quadratic Utility Function'){
  	choice_maxw <- abs(input$slider_quad_a/(2*input$slider_quad_b))
@@ -149,7 +348,7 @@ output$FullPlot <- renderPlot({
 	choice_maxw <- 100
  	 uncertainty.plot(type=input$utility_choice,a=input$slider_quad_a,b=input$slider_quad_b,r=input$slider_power_r,rho=input$slider_exp_rho,hara_gamma=input$text_h_gamma,hara_a=input$text_h_a,hara_b=input$text_h_b,w_initial=input$slider_w,prob_loss=input$slider_lossprob,w_gain=input$slider_wgain,w_loss=input$slider_wloss,w_slidermax=choice_maxw)
  }else if(input$utility_choice=='General Exponential Utility (CARA)'){
-	choice_maxw <- 100
+	choice_maxw <- 20
  	 uncertainty.plot(type=input$utility_choice,a=input$slider_quad_a,b=input$slider_quad_b,r=input$slider_power_r,rho=input$slider_exp_rho,hara_gamma=input$text_h_gamma,hara_a=input$text_h_a,hara_b=input$text_h_b,w_initial=input$slider_w,prob_loss=input$slider_lossprob,w_gain=input$slider_wgain,w_loss=input$slider_wloss,w_slidermax=choice_maxw)
  }else if(input$utility_choice=='Log Utility Function'){
 	 choice_maxw <- NA
@@ -158,18 +357,19 @@ output$FullPlot <- renderPlot({
 			#Quotient
 	 			quotient <- (-input$text_h_b*(1-input$text_h_gamma))/input$text_h_a
 			#Different cases [ui.r] later
- 			if(input$text_h_b==0){
-  				w_min <- 0
-  				w_max <- 100
-  		}else if(input$text_h_b!=0){ 
- 			  		if(input$text_h_gamma<1){
-  						w_min <- quotient
-  						w_max <- abs(w_min)*2
- 			  		}else if(input$text_h_gamma>1){
-		  				w_min <- 0
-  						w_max <- quotient
-  					}
-  		}
+				if(quotient<0){
+					w_min <- quotient
+					w_max <- abs(w_min)*2
+					w_initial<-(w_max-w_min)/2
+					w_gain=(w_max-w_initial)/2
+	 				w_loss=(w_initial-w_min)/2
+				}else if(quotient>0){
+					w_max <- quotient
+					w_min <- 0
+					w_initial<-(w_max-w_min)/2
+					w_gain=(w_max-w_initial)/2
+	 				w_loss=(w_initial-w_min)/2
+				}
   uncertainty.plot(type=input$utility_choice,a=input$slider_quad_a,b=input$slider_quad_b,r=input$slider_power_r,rho=input$slider_exp_rho,hara_gamma=input$text_h_gamma,hara_a=input$text_h_a,hara_b=input$text_h_b,w_initial=input$slider_w,prob_loss=input$slider_lossprob,w_gain=input$slider_wgain,w_loss=input$slider_wloss,w_slidermax=w_max,w_slidermin=w_min)
  }
 })
